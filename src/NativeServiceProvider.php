@@ -26,6 +26,7 @@ use Native\Desktop\Contracts\Shell as ShellContract;
 use Native\Desktop\Contracts\WindowManager as WindowManagerContract;
 use Native\Desktop\DataObjects\QueueConfig;
 use Native\Desktop\Drivers\Electron\ElectronServiceProvider;
+use Native\Desktop\Drivers\Tauri\TauriServiceProvider;
 use Native\Desktop\Events\EventWatcher;
 use Native\Desktop\Exceptions\Handler;
 use Native\Desktop\GlobalShortcut as GlobalShortcutImplementation;
@@ -63,7 +64,11 @@ class NativeServiceProvider extends PackageServiceProvider
 
     public function packageRegistered()
     {
-        $this->app->register(ElectronServiceProvider::class);
+        if (env('NATIVE_DRIVER') === 'tauri' || config('nativephp.driver') === 'tauri') {
+            $this->app->register(TauriServiceProvider::class);
+        } else {
+            $this->app->register(ElectronServiceProvider::class);
+        }
 
         $this->mergeConfigFrom($this->package->basePath('../config/nativephp-internal.php'), 'nativephp-internal');
 
