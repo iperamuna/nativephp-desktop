@@ -43,8 +43,11 @@ impl PhpServer {
                 // Spawn a thread to log stdout
                 tokio::spawn(async move {
                     while let Some(event) = rx.recv().await {
-                        if let CommandEvent::Stdout(line) = event {
+                        if let CommandEvent::Stdout(line) = &event {
                             println!("PHP: {}", line);
+                        }
+                        if let CommandEvent::Stderr(line) = &event {
+                            println!("PHP STDERR: {}", line);
                         }
                     }
                 });

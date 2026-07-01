@@ -89,6 +89,8 @@ async fn open_window(
     
     let url = payload.url.unwrap_or_else(|| "index.html".to_string());
     
+    println!("Received request to open window '{}' with url '{}'", payload.id, url);
+    
     let _window = tauri::WindowBuilder::new(
         &state.app_handle,
         payload.id,
