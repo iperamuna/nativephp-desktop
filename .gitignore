@@ -9,3 +9,8 @@ vendor
 node_modules
 /build
 .DS_Store
+
+# Tauri Driver scaffold artifacts
+resources/tauri/src-tauri/target/
+resources/tauri/src-tauri/bin/php*
+resources/tauri/dist/

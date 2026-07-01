@@ -1,0 +1,14 @@
+{
+  "name": "nativephp-tauri",
+  "version": "1.0.0",
+  "description": "A NativePHP Tauri application",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1.5.0"
+  }
+}
