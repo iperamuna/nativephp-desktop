@@ -23,16 +23,16 @@ class Client
 
     public function get(string $endpoint, array|string|null $query = null): Response
     {
-        return $this->client->get($endpoint, $query);
+        return $this->client->get($endpoint, $query)->throw();
     }
 
     public function post(string $endpoint, array $data = []): Response
     {
-        return $this->client->post($endpoint, $data);
+        return $this->client->post($endpoint, $data)->throw();
     }
 
     public function delete(string $endpoint, array $data = []): Response
     {
-        return $this->client->delete($endpoint, $data);
+        return $this->client->delete($endpoint, $data)->throw();
     }
 }
