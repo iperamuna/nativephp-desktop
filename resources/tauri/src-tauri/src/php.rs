@@ -14,7 +14,7 @@ impl PhpServer {
         }
     }
 
-    pub fn start(&mut self) -> Result<(), String> {
+    pub fn start(&mut self, api_port: u16) -> Result<(), String> {
         let app_path = env::var("APP_PATH").unwrap_or_else(|_| {
             env::current_dir().unwrap().to_string_lossy().to_string()
         });
@@ -32,7 +32,7 @@ impl PhpServer {
 
         command = command.envs(vec![
             ("NATIVEPHP_RUNNING".to_string(), "true".to_string()),
-            ("NATIVEPHP_API_URL".to_string(), format!("http://127.0.0.1:{}/api/", self.port)),
+            ("NATIVEPHP_API_URL".to_string(), format!("http://127.0.0.1:{}/_native/api/", api_port)),
             ("APP_PATH".to_string(), app_path)
         ].into_iter().collect());
 
@@ -56,7 +56,7 @@ impl PhpServer {
     }
 
     pub fn stop(&mut self) {
-        if let Some(mut process) = self.process.take() {
+        if let Some(process) = self.process.take() {
             println!("Killing PHP server process...");
             let _ = process.kill();
         }

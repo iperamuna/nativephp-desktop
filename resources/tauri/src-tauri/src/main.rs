@@ -20,13 +20,13 @@ async fn main() {
     let app = tauri::Builder::default()
         .system_tray(tray)
         .setup(|app| {
-            // Start the PHP Artisan server
-            let mut php_server = php::PhpServer::new();
-            php_server.start().expect("Failed to start PHP server");
-
             // Save the port to use it for our API server
             let api_port = port_scanner::request_open_port().unwrap_or(4000);
-            
+
+            // Start the PHP Artisan server
+            let mut php_server = php::PhpServer::new();
+            php_server.start(api_port).expect("Failed to start PHP server");
+
             // Start the Tauri API Server
             let handle = app.handle();
             tokio::spawn(async move {
