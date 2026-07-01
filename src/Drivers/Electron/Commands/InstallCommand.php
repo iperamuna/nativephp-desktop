@@ -25,13 +25,37 @@ class InstallCommand extends Command
     protected $signature = 'native:install
         {--force : Overwrite existing files by default}
         {--publish : Publish the Electron project to your project\'s root}
-        {--installer=npm : The package installer to use: npm or yarn}';
+        {--installer=npm : The package installer to use: npm or yarn}
+        {--driver= : The driver to use (electron or tauri)}';
 
     public function handle(): void
     {
         $force = $this->option('force');
         $publish = $this->option('publish');
         $withoutInteraction = $this->option('no-interaction');
+        $driver = $this->option('driver');
+
+        if ($driver === 'tauri') {
+            $envPath = base_path('.env');
+            if (file_exists($envPath)) {
+                $envContent = file_get_contents($envPath);
+                if (preg_match('/^NATIVE_DRIVER=.*$/m', $envContent)) {
+                    $envContent = preg_replace('/^NATIVE_DRIVER=.*$/m', 'NATIVE_DRIVER=tauri', $envContent);
+                } else {
+                    $envContent .= "\nNATIVE_DRIVER=tauri\n";
+                }
+                file_put_contents($envPath, $envContent);
+            }
+
+            info('Driver switched to Tauri. Restarting installer...');
+            
+            $args = ['php', 'artisan', 'native:install'];
+            if ($force) $args[] = '--force';
+            if ($withoutInteraction) $args[] = '--no-interaction';
+            
+            passthru(implode(' ', $args));
+            return;
+        }
 
         // Prompt for publish
         $shouldPromptForPublish = ! $force && ! $withoutInteraction;
