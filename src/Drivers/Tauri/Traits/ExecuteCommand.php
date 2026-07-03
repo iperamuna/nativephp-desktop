@@ -40,7 +40,6 @@ trait ExecuteCommand
         $result = Process::path(TauriServiceProvider::tauriPath())
             ->env($envs[$type] ?? [])
             ->forever()
-            ->tty(! $withoutInteraction && PHP_OS_FAMILY != 'Windows')
             ->run($command, function (string $type, string $output) {
                 if ($this->getOutput()->isVerbose()) {
                     echo $output;

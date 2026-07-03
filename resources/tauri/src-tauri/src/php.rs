@@ -1,4 +1,5 @@
 use std::env;
+// Trigger rebuild
 use tauri::api::process::{Command, CommandChild, CommandEvent};
 
 pub struct PhpServer {
@@ -26,14 +27,18 @@ impl PhpServer {
         // Uses the bundled bin/php-x86_64-apple-darwin (or whatever target)
         // If not bundled (like in dev), we can fallback to standard php via env var
         // but for Tauri sidecars it will try to find the binary named `php` sidecar.
+        let server_path = format!("{}/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php", app_path);
+        let public_path = format!("{}/public", app_path);
+
         let mut command = Command::new_sidecar("php")
             .map_err(|e| format!("Failed to create sidecar command: {}", e))?
-            .args(["artisan", "serve", "--host=127.0.0.1", &format!("--port={}", self.port)]);
+            .args(["-S", &format!("127.0.0.1:{}", self.port), "-t", &public_path, &server_path]);
 
         command = command.envs(vec![
             ("NATIVEPHP_RUNNING".to_string(), "true".to_string()),
             ("NATIVEPHP_API_URL".to_string(), format!("http://127.0.0.1:{}/_native/api/", api_port)),
-            ("APP_PATH".to_string(), app_path)
+            ("APP_PATH".to_string(), app_path.clone()),
+            ("NATIVEPHP_SECRET".to_string(), "NativePHPTauriSecret".to_string())
         ].into_iter().collect());
 
         match command.spawn() {
@@ -41,13 +46,14 @@ impl PhpServer {
                 self.process = Some(child);
                 
                 // Spawn a thread to log stdout
-                tokio::spawn(async move {
+                tauri::async_runtime::spawn(async move {
                     while let Some(event) = rx.recv().await {
-                        if let CommandEvent::Stdout(line) = &event {
-                            println!("PHP: {}", line);
-                        }
-                        if let CommandEvent::Stderr(line) = &event {
-                            println!("PHP STDERR: {}", line);
+                        match &event {
+                            CommandEvent::Stdout(line) => println!("PHP: {}", line),
+                            CommandEvent::Stderr(line) => println!("PHP STDERR: {}", line),
+                            CommandEvent::Error(err) => println!("PHP ERROR: {}", err),
+                            CommandEvent::Terminated(payload) => println!("PHP TERMINATED: {:?}", payload),
+                            _ => println!("PHP OTHER EVENT: {:?}", event),
                         }
                     }
                 });

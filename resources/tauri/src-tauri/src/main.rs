@@ -13,8 +13,7 @@ struct PhpState {
     server: Mutex<php::PhpServer>,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let tray = tauri::SystemTray::new();
 
     let app = tauri::Builder::default()
@@ -29,8 +28,38 @@ async fn main() {
 
             // Start the Tauri API Server
             let handle = app.handle();
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 api_server::start_api_server(handle, api_port).await;
+            });
+
+            let secret = "NativePHPTauriSecret".to_string();
+            let php_port = php_server.port;
+            
+            tauri::async_runtime::spawn(async move {
+                let client = tauri::api::http::ClientBuilder::new().build().unwrap();
+
+                for i in 0..10 {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    
+                    let request = tauri::api::http::HttpRequestBuilder::new(
+                        "POST", 
+                        format!("http://127.0.0.1:{}/_native/api/booted", php_port)
+                    ).unwrap()
+                    .header("X-NativePHP-Secret", &secret).unwrap()
+                    .body(tauri::api::http::Body::Json(serde_json::json!({
+                        "event": "Native\\Laravel\\Events\\App\\ApplicationBooted"
+                    })));
+                    
+                    match client.send(request).await {
+                        Ok(response) => {
+                            println!("Boot event sent on attempt {}. Status: {}", i + 1, response.status());
+                            break;
+                        },
+                        Err(e) => {
+                            println!("Failed to send boot event on attempt {}: {:?}", i + 1, e);
+                        }
+                    }
+                }
             });
 
             // Manage the PHP server state

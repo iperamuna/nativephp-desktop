@@ -91,10 +91,16 @@ async fn open_window(
     
     println!("Received request to open window '{}' with url '{}'", payload.id, url);
     
+    let window_url = if url.starts_with("http") {
+        tauri::WindowUrl::External(url.parse().unwrap())
+    } else {
+        tauri::WindowUrl::App(url.into())
+    };
+
     let _window = tauri::WindowBuilder::new(
         &state.app_handle,
         payload.id,
-        tauri::WindowUrl::External(url.parse().unwrap())
+        window_url
     )
     .title(payload.title.unwrap_or_else(|| "NativePHP".to_string()))
     .build()
