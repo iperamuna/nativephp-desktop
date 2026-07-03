@@ -57,6 +57,18 @@ class InstallCommand extends Command
             return;
         }
 
+        // We are installing Tauri, make sure .env is updated to Tauri driver
+        $envPath = base_path('.env');
+        if (file_exists($envPath)) {
+            $envContent = file_get_contents($envPath);
+            if (preg_match('/^NATIVE_DRIVER=.*$/m', $envContent)) {
+                $envContent = preg_replace('/^NATIVE_DRIVER=.*$/m', 'NATIVE_DRIVER=tauri', $envContent);
+            } else {
+                $envContent .= "\nNATIVE_DRIVER=tauri\n";
+            }
+            file_put_contents($envPath, $envContent);
+        }
+
         // Prompt for publish
         $shouldPromptForPublish = ! $force && ! $withoutInteraction;
         if (! $publish && $shouldPromptForPublish) {
