@@ -24,11 +24,12 @@ impl PhpServer {
 
         println!("Starting PHP Sidecar on port {}", self.port);
 
-        // Uses the bundled bin/php-x86_64-apple-darwin (or whatever target)
-        // If not bundled (like in dev), we can fallback to standard php via env var
-        // but for Tauri sidecars it will try to find the binary named `php` sidecar.
-        let server_path = format!("{}/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php", app_path);
+        // Uses a custom router.php located in src-tauri to properly set the working directory
+        let server_path = format!("{}/router.php", env::current_dir().unwrap().to_string_lossy());
         let public_path = format!("{}/public", app_path);
+
+        let storage_path = format!("{}/storage", app_path);
+        let database_path = format!("{}/database/database.sqlite", app_path);
 
         let mut command = Command::new_sidecar("php")
             .map_err(|e| format!("Failed to create sidecar command: {}", e))?
@@ -38,6 +39,8 @@ impl PhpServer {
             ("NATIVEPHP_RUNNING".to_string(), "true".to_string()),
             ("NATIVEPHP_API_URL".to_string(), format!("http://127.0.0.1:{}/_native/api/", api_port)),
             ("APP_PATH".to_string(), app_path.clone()),
+            ("NATIVEPHP_STORAGE_PATH".to_string(), storage_path),
+            ("NATIVEPHP_DATABASE_PATH".to_string(), database_path),
             ("NATIVEPHP_SECRET".to_string(), "NativePHPTauriSecret".to_string())
         ].into_iter().collect());
 
