@@ -507,3 +507,37 @@ async fn start_child_process(
         }
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_menu_parsing() {
+        let json_payload = r#"
+        {
+            "items": [
+                {
+                    "type": "role",
+                    "id": "quit"
+                },
+                {
+                    "type": "separator"
+                },
+                {
+                    "type": "normal",
+                    "id": "custom1",
+                    "label": "Custom Item"
+                }
+            ]
+        }
+        "#;
+
+        let payload: MenuPayload = serde_json::from_str(json_payload).unwrap();
+        assert_eq!(payload.items.len(), 3);
+        
+        let menu = build_tauri_menu(payload.items);
+        // Tauri v1 Menu doesn't have an easy public API to inspect items, 
+        // but verifying it builds without panicking is a good smoke test.
+    }
+}
