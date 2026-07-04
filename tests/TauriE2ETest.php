@@ -14,8 +14,8 @@ beforeEach(function () {
     ]);
 
     // Mock environment variables injected by Tauri Bridge
-    putenv('NATIVEPHP_API_URL=http://127.0.0.1:8100/_native/api/');
-    putenv('NATIVEPHP_RUNNING=true');
+    config(['nativephp-internal.api_url' => 'http://127.0.0.1:8100/_native/api/']);
+    config(['nativephp.running' => true]);
 });
 
 it('can dispatch window open commands to the tauri bridge', function () {
@@ -43,7 +43,7 @@ it('can dispatch clipboard write commands to the tauri bridge', function () {
     Clipboard::text('Secret Password');
 
     Http::assertSent(function ($request) {
-        return $request->url() == 'http://127.0.0.1:8100/_native/api/clipboard' &&
+        return $request->url() == 'http://127.0.0.1:8100/_native/api/clipboard/text' &&
                $request['text'] == 'Secret Password';
     });
 });
