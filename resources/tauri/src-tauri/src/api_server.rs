@@ -22,6 +22,8 @@ struct WindowOpenPayload {
     #[allow(dead_code)]
     height: Option<f64>,
     url: Option<String>,
+    #[serde(rename = "showDevTools")]
+    show_dev_tools: Option<bool>,
 }
 
 #[derive(Deserialize)]
@@ -70,6 +72,9 @@ pub async fn start_api_server(app_handle: AppHandle, port: u16) {
         .route("/_native/api/window/menu", post(set_window_menu))
         .route("/_native/api/dialog", post(show_dialog))
         .route("/_native/api/shortcut", post(register_shortcut))
+        .route("/_native/api/child-process/start", post(start_child_process))
+        .route("/_native/api/child-process/start-php", post(start_child_process))
+        .route("/_native/api/child-process/start-node", post(start_child_process))
         .with_state(state);
 
     let listener = TcpListener::bind(format!("127.0.0.1:{}", port))
@@ -87,7 +92,10 @@ async fn open_window(
     Json(payload): Json<WindowOpenPayload>,
 ) -> Json<ApiResponse> {
     
-    let url = payload.url.unwrap_or_else(|| "index.html".to_string());
+    let mut url = payload.url.unwrap_or_else(|| "index.html".to_string());
+    if url.contains("127.0.0.1") {
+        url = url.replace("127.0.0.1", "localhost");
+    }
     
     println!("Received request to open window '{}' with url '{}'", payload.id, url);
     
@@ -97,7 +105,7 @@ async fn open_window(
         tauri::WindowUrl::App(url.into())
     };
 
-    let _window = tauri::WindowBuilder::new(
+    let window = tauri::WindowBuilder::new(
         &state.app_handle,
         payload.id,
         window_url
@@ -105,6 +113,12 @@ async fn open_window(
     .title(payload.title.unwrap_or_else(|| "NativePHP".to_string()))
     .build()
     .unwrap();
+
+    let _ = window.show();
+    
+    if payload.show_dev_tools.unwrap_or(false) {
+        window.open_devtools();
+    }
 
     Json(ApiResponse { success: true })
 }
@@ -188,4 +202,54 @@ async fn register_shortcut(
     });
 
     Json(ApiResponse { success: true })
+}
+
+#[derive(Deserialize)]
+struct ChildProcessPayload {
+    #[allow(dead_code)]
+    alias: String,
+    #[allow(dead_code)]
+    cmd: Vec<String>,
+    #[allow(dead_code)]
+    cwd: Option<String>,
+}
+
+#[derive(Serialize)]
+struct ChildProcessSettings {
+    alias: String,
+    cmd: Vec<String>,
+    cwd: Option<String>,
+    env: Option<std::collections::HashMap<String, String>>,
+    persistent: bool,
+    #[serde(rename = "handlesOwnShutdown")]
+    handles_own_shutdown: bool,
+    #[serde(rename = "iniSettings")]
+    ini_settings: Option<std::collections::HashMap<String, String>>,
+}
+
+#[derive(Serialize)]
+struct ChildProcessResponse {
+    pid: u32,
+    settings: ChildProcessSettings,
+}
+
+async fn start_child_process(
+    State(_state): State<AppState>,
+    Json(payload): Json<ChildProcessPayload>,
+) -> Json<ChildProcessResponse> {
+    
+    println!("Received request to start child process: {:?}", payload.cmd);
+
+    Json(ChildProcessResponse { 
+        pid: 1, 
+        settings: ChildProcessSettings {
+            alias: payload.alias,
+            cmd: payload.cmd,
+            cwd: payload.cwd,
+            env: None,
+            persistent: false,
+            handles_own_shutdown: false,
+            ini_settings: None,
+        }
+    })
 }
